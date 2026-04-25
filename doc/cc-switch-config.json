@@ -1,0 +1,26 @@
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "lmstudio",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-35b-a3b",
+    "ANTHROPIC_BASE_URL": "http://localhost:1234",
+    "ANTHROPIC_MODEL": "qwen/qwen3.6-35b-a3b",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen/qwen3.6-35b-a3b",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen/qwen3.6-35b-a3b",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "API_TIMEOUT_MS": "3000000"
+  },
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "caveman@caveman": true,
+    "chrome-devtools-mcp@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
+  "skipDangerousModePermissionPrompt": true
+}
