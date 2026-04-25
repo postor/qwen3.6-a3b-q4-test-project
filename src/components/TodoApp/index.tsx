@@ -1,15 +1,19 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Todo } from '@/core/todo'
 import { todoRepository } from '@/core/todo'
 
 const STORAGE_KEY = 'todos'
 
 export default function TodoApp() {
-  const [todos, setTodos] = useState<Todo[]>(() => todoRepository.list(STORAGE_KEY))
+  const [todos, setTodos] = useState<Todo[]>([])
   const [inputValue, setInputValue] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+
+  useEffect(() => {
+    setTodos(todoRepository.list(STORAGE_KEY))
+  }, [])
 
   const refresh = useCallback(() => {
     setTodos(todoRepository.list(STORAGE_KEY))
