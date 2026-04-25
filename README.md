@@ -1,36 +1,198 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 使用 Qwen3.6 在 RTX4090 上开发一个应用
 
-## Getting Started
+本文档记录从零开始在本地部署的 Qwen3.6 大模型 + Claude Code (CC) 之上，用 TDD 方式开发一个 Next.js Todo 应用的完整过程。所有 prompt 均按时间顺序追溯。
 
-First, run the development server:
+---
+
+## LMStudio 服务配置
+
+运行环境使用 LMStudio 作为本地 LLM 推理后端，通过 OpenAI 兼容 API 提供模型调用能力：
+
+| 项目 | 配置值 |
+|------|--------|
+| **模型** | Qwen/Qwen3.6-35B-A3B（通义千问） |
+| **硬件** | NVIDIA RTX 4090 24GB |
+| **推理后端** | LMStudio (llama.cpp) |
+| **API 端点** | `http://localhost:1234/v1` |
+| **API Key** | `lm-studio`（本地占位） |
+| **上下文窗口** | 按需配置 |
+
+LMStudio 启动后，模型加载在 RTX 4090 的 GPU 上运行。通过 OpenAI 兼容接口暴露给 Claude Code，CC 将 prompt 发送给 LMStudio 获取推理结果。
+
+### LM Studio 配置步骤
+
+#### 4. 命令行启动
+
+LM Studio 提供 CLI 命令，可在后台启动推理服务器：
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 指定模型并启动 HTTP 服务
+lms server start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+优势：适合 SSH 远程环境、CI/CD 集成或无头服务器。GUI 方式见下方步骤。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+![LM Studio Download Model](./doc/LM_Studio_download-model.png)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### 2. 启用开发者选项
 
-## Learn More
+进入 Settings → Developer Utilities，打开开关以暴露本地 API 端点。
 
-To learn more about Next.js, take a look at the following resources:
+![LM Studio Enable Developer](./doc/LM_Studio_enable-developer.png)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+#### 3. 配置上下文窗口
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+将 Context Length 设置为最大值（如 32768），确保完整处理长对话。
 
-## Deploy on Vercel
+![LM Studio Context Max](./doc/LM_Studio_config-context-max.png)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Claude Code (CC) 配置
+
+Claude Code 作为主交互界面（CLI），负责 orchestrating 开发流程、调用工具（文件系统、git、浏览器等）。
+
+本项目使用 cc-switch 你可以考虑其他配置方法，只要保证 CC 可以使用 对应接口即可
+
+### cc-switch：多 AI CLI 配置切换工具
+
+[cc-switch](https://github.com/farion1231/cc-switch) 是一个跨平台桌面工具，统一管理 5 个 AI 编码 CLI 的配置：Claude Code、Codex、Gemini CLI、OpenCode、OpenClaw。
+
+**Claude Code 支持热切换** — 更换配置后无需重启终端。
+
+本项目使用 cc-switch 管理本地模型代理配置：
+
+### CC 插件配置
+
+使用 [cc-switch-config.json](./doc/cc-switch-config.json) 管理本地模型代理切换。关键配置：
+
+- **Base URL**: `http://localhost:1234`（LM Studio 端口）
+- **Model**: `qwen/qwen3.6-35b-a3b`
+- **API Timeout**: 3000000ms（50分钟，支持长操作）
+- **启用插件**: caveman, chrome-devtools-mcp
+
+![CC Switch Config](./doc/cc-switch_config.png)
+
+### MCP Server（浏览器自动化 + 外部集成）
+
+| Server | 用途 |
+|--------|------|
+| `chrome-devtools-mcp` | Chrome DevTools 协议，用于 inspect 页面、点击/填充元素、截图、性能分析 |
+
+
+## Next.js 初始化
+
+项目通过 Create Next App (CNA) scaffold，后续在 feature branch 上进行功能开发：
+
+```bash
+npx create-next-app@latest qwen3.6-a3b-test --typescript --tailwind --app
+cd qwen3.6-a3b-test
+git init
+git checkout -b feature/todo-app
+```
+
+**初始技术栈：** Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript + Turbopack
+
+---
+
+## Prompt 追溯（按时间顺序）
+
+### Prompt 1 — 模型确认
+> 你是什么模型？
+
+### Prompt 2 — 再次确认（中断后重试）
+> 你是什么模型？
+
+### Prompt 3 — 查看项目结构
+> ls
+
+### Prompt 4 — 初始化 Git 仓库
+> init git
+
+### Prompt 5 — TDD 开发 Todo App
+> git feature branch, tdd full function todo with persist in localstorage
+
+### Prompt 6 — /init 命令：生成 CLAUDE.md
+
+**结果：** 创建了项目 CLAUDE.md，记录了常用命令、开发工作流和架构概览。
+
+### Prompt 7 — 重构代码结构
+> 更新 claude.md，以claude习惯的方式组织代码结构（容易从目录结构寻找，功能单一，命名规范，从路径可以推导含义等），让相关的代码和资源靠的更近，注意代码异味
+
+**意图：** 将扁平化的 `src/lib/todo.ts` 和 `src/components/TodoApp.tsx` 重构为 feature-based layout：
+- `src/core/todo/{model,storage,repository}` — 业务逻辑分层
+- `src/components/TodoApp/index.{tsx,test.tsx}` — UI 与测试共置
+
+### Prompt 8 — Chrome 验证
+> 运行测试服并使用chrome dev plugin测试
+
+**意图：** 启动开发服务器，用 Chrome DevTools MCP 手动验证所有功能。
+
+### Prompt 9 — SSR 问题质疑 + CLAUDE.md 更新
+> [Request interrupted by user]
+> [Request interrupted by user]
+> 为什么是 trycatch而不是使用window判断ssr？更新Claudemd避免之后犯错
+
+**意图：** 发现 `storage.ts` 中用 bare try/catch 处理 localStorage，质疑这种写法在 Next.js SSR 场景下的正确性。要求更新 CLAUDE.md 记录正确的模式：`typeof localStorage !== 'undefined'` typeof guard + try/catch 仅用于运行时错误。
+
+**修复：** storage.ts 从 bare try/catch 改为：
+```typescript
+const canUseStorage = typeof localStorage !== 'undefined'
+if (!canUseStorage) return [] as T[]
+try { /* browser API */ } catch (e: unknown) { console.error(e) }
+```
+
+### Prompt 10 — 上下文恢复（context overflow）
+
+> This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion...
+
+**说明：** 对话超出上下文窗口限制，系统自动生成摘要后继续。
+
+### Prompt 11 — 最终验证并提交
+> 跑通单测和chrome测试后提交
+
+**意图：** 修复 storage.test.ts（JSON parse error 测试从 toThrow → 改为预期空数组），全量测试通过后用 Chrome 手动验证，最后 commit。
+
+### Prompt 12 — 生成文档（当前 prompt）
+> 生成一个文档 使用qwen3.6在RTX4090上开发一个应用.md 文档中前置几个section：lmstudio服务配置，cc配置，初始化next代码，后续section追溯本项目开始以来的所有prompt
+
+---
+
+## Git Commit 历史
+
+| # | Hash | Message | 时间 |
+|---|------|---------|------|
+| 1 | `d931e9b` | Initial commit from Create Next App | 14:08 |
+| 2 | `855e8bc` | feat: initial project setup | 14:09 |
+| 3 | `791d85c` | feat: add todo app with localStorage persistence (TDD) | 14:28 |
+| 4 | `0e46da1` | refactor: restructure into feature-based layout with SSR-safe storage and updated CLAUDE.md | 18:25 |
+
+---
+
+## 最终项目结构
+
+```
+app/                          # Next.js App Router
+  layout.tsx                  # Root layout
+  page.tsx                    # Entry point → TodoApp
+
+src/
+  components/TodoApp/
+    index.tsx                 # React UI ('use client')
+    index.test.tsx            # UI tests (10 cases)
+  core/todo/
+    model.ts                  # Todo interface
+    storage.ts                # localStorage wrapper + SSR guard
+    repository.ts             # CRUD business logic
+    repository.test.ts        # Unit tests
+    storage.test.ts           # Unit tests
+    index.ts                  # Barrel exports
+  __tests__/setup.ts          # Test setup (localStorage mock)
+
+CLAUDE.md                     # Living documentation
+tsconfig.json                 # @/* → ./src/* path alias
+vitest.config.ts              # happy-dom + globals + alias
+```
+
+**测试覆盖：** 22/22 tests passing（storage: 5, repository: 7, TodoApp component: 10）
