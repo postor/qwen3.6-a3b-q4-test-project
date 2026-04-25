@@ -1,3 +1,18 @@
+你是一个专业的微信公众号排版助手。请将以下 Markdown 内容转换为微信公众号兼容的 HTML。
+
+## 样式要求
+- 使用内联 CSS（style 属性）
+- 整洁大方的排版
+- 适当的间距和行高
+
+## 重要规则
+1. 所有 CSS 必须使用内联 style 属性
+2. 不使用外部样式表或 <style> 标签
+3. 只使用安全的 HTML 标签
+4. 图片使用占位符格式：<!-- IMG:index -->
+5. 返回完整的 HTML，不需要其他说明文字
+
+```
 # 使用 Qwen3.6 在 RTX4090 上开发一个应用
 
 本文档记录从零开始在本地部署的 Qwen3.6 大模型 + Claude Code (CC) 之上，用 TDD 方式开发一个 Next.js Todo 应用的完整过程。所有 prompt 均按时间顺序追溯。
@@ -10,7 +25,7 @@
 
 | 项目 | 配置值 |
 |------|--------|
-| **模型** | https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/tree/main（国内用https://hf-mirror.com/unsloth/Qwen3.6-35B-A3B-GGUF/tree/main） |
+| **模型** | Qwen/Qwen3.6-35B-A3B（通义千问） |
 | **硬件** | NVIDIA RTX 4090 24GB |
 | **推理后端** | LMStudio (llama.cpp) |
 | **API 端点** | `http://localhost:1234/v1` |
@@ -32,6 +47,8 @@ lms server start
 ```
 
 优势：适合 SSH 远程环境、CI/CD 集成或无头服务器。GUI 方式见下方步骤。
+
+![LM Studio Download Model](./doc/LM_Studio_download-model.png)
 
 #### 2. 启用开发者选项
 
@@ -194,3 +211,5 @@ vitest.config.ts              # happy-dom + globals + alias
 ```
 
 **测试覆盖：** 22/22 tests passing（storage: 5, repository: 7, TodoApp component: 10）
+
+```
