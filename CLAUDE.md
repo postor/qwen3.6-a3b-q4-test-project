@@ -86,3 +86,27 @@ try { localStorage.getItem('key') } catch { /* silent fail */ }
 ## Next.js Notes
 
 ⚠️ This is Next.js 16 (App Router). Breaking changes from older versions. Check `node_modules/next/dist/docs/` for latest API docs before writing code.
+
+## Known API Errors & Pitfalls
+
+### tool_result.content array non-text blocks
+
+**Error:** `API Error: 400 {"type":"invalid_request_error","message":"Only text tool_result blocks are supported when tool_result.content is an array."}`
+
+**Cause:** Passing non-text blocks (images, tool_use, tool_result nested in content arrays) to the Claude API when `content` is structured as an array. The API only accepts `text` type blocks in this format.
+
+**How to avoid:**
+- When building `tool_result` content as an array, ensure every block has `type: "text"` — never include `image`, nested `tool_use`, or other block types
+- If you need to reference tool output that contains images or structured data, convert it to a text description/string first
+- Never pass raw multi-modal responses back into tool_result arrays without stripping non-text blocks
+
+### Hydration mismatch: reading localStorage in useState initializer
+
+**Error:** `Hydration failed because the server rendered HTML didn't match the client.`
+
+**Cause:** Using `useState(() => readFromLocalStorage())` — SSR returns `[]`, client reads saved data. Mismatch on first render.
+
+**How to avoid:**
+- Never call browser-only APIs (localStorage, window, Date.now) inside `useState` initializer or component body during render
+- Use `useState(initialValue)` with a safe default (`[]`, `''`, `false`) → load real data in `useEffect(() => { setData(...) }, [])`
+- This ensures SSR and hydration see identical content; client-side data appears after hydration completes
