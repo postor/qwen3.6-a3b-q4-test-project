@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import TodoApp from './TodoApp'
+import TodoApp from './index'
 
 describe('TodoApp', () => {
   const user = userEvent.setup()
@@ -50,7 +50,6 @@ describe('TodoApp', () => {
     await user.click(checkbox)
     expect(checkbox).toBeChecked()
 
-    // Check strikethrough style
     const todoSpan = screen.getByText('Toggle this')
     expect(todoSpan).toHaveStyle({ textDecoration: 'line-through' })
   })
@@ -79,14 +78,14 @@ describe('TodoApp', () => {
     await user.type(input, 'Active task')
     await user.click(screen.getByTestId('add-button'))
 
-    // Mark first as complete BEFORE adding second (avoids interaction overlap)
+    // Mark first as complete before adding second
     await user.click(screen.getByTestId('checkbox-1'))
 
     await user.clear(input)
     await user.type(input, 'Done task')
     await user.click(screen.getByTestId('add-button'))
 
-    // Filter to completed — should show only "Active task" (marked complete above)
+    // Filter to completed — shows only the completed "Active task"
     await user.click(screen.getByTestId('filter-completed'))
     expect(screen.getByText('Active task')).toBeInTheDocument()
     expect(screen.queryByText('Done task')).not.toBeInTheDocument()
@@ -99,9 +98,12 @@ describe('TodoApp', () => {
 
   it('clears completed todos', async () => {
     render(<TodoApp />)
-    await user.type(screen.getByTestId('todo-input'), 'Keep me')
+    const input = screen.getByTestId('todo-input')
+
+    await user.type(input, 'Keep me')
     await user.click(screen.getByTestId('add-button'))
-    await user.type(screen.getByTestId('todo-input'), 'Remove me')
+    await user.clear(input)
+    await user.type(input, 'Remove me')
     await user.click(screen.getByTestId('add-button'))
 
     // Mark second complete

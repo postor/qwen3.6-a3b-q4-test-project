@@ -1,31 +1,40 @@
-import { useState } from 'react'
-import { todoStorage, Todo } from '../lib/todo'
+'use client'
+
+import { useState, useCallback } from 'react'
+import type { Todo } from '@/core/todo'
+import { todoRepository } from '@/core/todo'
+
+const STORAGE_KEY = 'todos'
 
 export default function TodoApp() {
-  const [todos, setTodos] = useState<Todo[]>(todoStorage.getAll())
+  const [todos, setTodos] = useState<Todo[]>(() => todoRepository.list(STORAGE_KEY))
   const [inputValue, setInputValue] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
+  const refresh = useCallback(() => {
+    setTodos(todoRepository.list(STORAGE_KEY))
+  }, [])
+
   const addTodo = () => {
     if (!inputValue.trim()) return
-    const id = todoStorage.add(inputValue.trim())
-    setTodos(todoStorage.getAll())
+    todoRepository.create(STORAGE_KEY, inputValue.trim())
     setInputValue('')
+    refresh()
   }
 
   const toggleTodo = (id: number) => {
-    todoStorage.toggle(id)
-    setTodos(todoStorage.getAll())
+    todoRepository.toggle(STORAGE_KEY, id)
+    refresh()
   }
 
   const removeTodo = (id: number) => {
-    todoStorage.remove(id)
-    setTodos(todoStorage.getAll())
+    todoRepository.remove(STORAGE_KEY, id)
+    refresh()
   }
 
   const clearCompleted = () => {
-    todoStorage.clearCompleted()
-    setTodos(todoStorage.getAll())
+    todoRepository.clearCompleted(STORAGE_KEY)
+    refresh()
   }
 
   const filteredTodos = todos.filter((todo) => {
